@@ -40,31 +40,22 @@ export default function JoinGroupForm() {
       return;
     }
 
-    const { data: group, error: groupError } = await supabase
-      .from("savings_groups")
-      .select("id")
-      .eq("invite_code", trimmed)
-      .maybeSingle();
+    const { data: group, error: joinError } = await supabase.rpc(
+      "join_group_by_code",
+      { p_invite_code: trimmed }
+    );
 
-    if (groupError || !group) {
-      setError("Kode undangan tidak ditemukan. Periksa kembali kodenya.");
+    if (joinError || !group) {
+      setError(
+        joinError?.message?.includes("tidak ditemukan")
+          ? "Kode undangan tidak ditemukan. Periksa kembali kodenya."
+          : "Gagal bergabung: " + (joinError?.message ?? "kode tidak valid")
+      );
       setLoading(false);
       return;
     }
 
-    const { error: joinError } = await supabase.from("group_members").insert({
-      group_id: group.id,
-      user_id: userData.user.id,
-      role: "member",
-    });
-
-    if (joinError && !joinError.message.includes("duplicate")) {
-      setError("Gagal bergabung: " + joinError.message);
-      setLoading(false);
-      return;
-    }
-
-    router.push(`/groups/${group.id}`);
+    router.push(`/groups/${(group as { id: string }).id}`);
   }
 
   function handleSubmit(e: React.FormEvent) {
