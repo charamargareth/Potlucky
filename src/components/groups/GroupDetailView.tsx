@@ -10,6 +10,7 @@ import RecommendationCard from "@/components/groups/RecommendationCard";
 import InviteModal from "@/components/groups/InviteModal";
 import MemberList from "@/components/groups/MemberList";
 import ReminderSettingsModal from "@/components/groups/ReminderSettingsModal";
+import EditGroupModal from "@/components/groups/EditGroupModal";
 import AddContributionModal from "@/components/contributions/AddContributionModal";
 import SavingsChart from "@/components/contributions/SavingsChart";
 import Logbook from "@/components/contributions/Logbook";
@@ -20,6 +21,7 @@ import {
   BellRing,
   TrendingUp,
   NotebookPen,
+  Pencil,
 } from "lucide-react";
 import { formatCurrency, formatDateID, todayISO } from "@/lib/utils";
 import type {
@@ -43,6 +45,7 @@ export default function GroupDetailView({ groupId }: { groupId: string }) {
   const [showInvite, setShowInvite] = useState(false);
   const [showAddContribution, setShowAddContribution] = useState(false);
   const [showReminderSettings, setShowReminderSettings] = useState(false);
+  const [showEditGroup, setShowEditGroup] = useState(false);
 
   const loadData = useCallback(async () => {
     const supabase = createClient();
@@ -186,6 +189,12 @@ export default function GroupDetailView({ groupId }: { groupId: string }) {
           <BellRing className="size-4" />
           Pengingat
         </Button>
+        {currentUserId === group.created_by && (
+          <Button variant="outline" onClick={() => setShowEditGroup(true)}>
+            <Pencil className="size-4" />
+            Edit pot
+          </Button>
+        )}
       </div>
 
       {/* Tabs */}
@@ -268,6 +277,13 @@ export default function GroupDetailView({ groupId }: { groupId: string }) {
       )}
       {showReminderSettings && (
         <ReminderSettingsModal groupId={groupId} onClose={() => setShowReminderSettings(false)} />
+      )}
+      {showEditGroup && (
+        <EditGroupModal
+          group={group}
+          onClose={() => setShowEditGroup(false)}
+          onSaved={(updated) => setGroup(updated)}
+        />
       )}
     </div>
   );
