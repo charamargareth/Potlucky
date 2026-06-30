@@ -263,7 +263,7 @@ export default function GroupDetailView({ groupId }: { groupId: string }) {
       )}
 
       {showInvite && (
-        <InviteModal inviteCode={group.invite_code} onClose={() => setShowInvite(false)} />
+        <InviteModal inviteCode={group.invite_code} groupName={group.name} onClose={() => setShowInvite(false)} />
       )}
       {showAddContribution && (
         <AddContributionModal
