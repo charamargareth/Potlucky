@@ -1,0 +1,116 @@
+@import "tailwindcss";
+
+:root {
+  /* --- Palet utama: hangat, bukan pink generik --- */
+  --color-cream: #fff7f5;        /* latar utama: krem kemerahan hangat */
+  --color-peach: #ffede4;        /* permukaan card */
+  --color-pink-soft: #ffd9e0;    /* pink lembut: border, badge, hover */
+  --color-pink-strong: #ff6b8a;  /* pink tegas: tombol utama, progress */
+  --color-pink-deep: #e0476a;    /* pink gelap: hover state tombol */
+  --color-ink: #5c3a42;          /* teks utama: cokelat-marun, lebih hangat dari hitam */
+  --color-ink-soft: #8a6670;     /* teks sekunder */
+  --color-glass: #fbfdfb;        /* "kaca" toples */
+  --color-mint: #3fae7a;         /* status positif / tercapai */
+  --color-mint-soft: #e3f5ec;    /* latar status positif */
+  --color-amber: #d98c2b;        /* peringatan / belum nabung hari ini */
+  --color-amber-soft: #fbf0dd;   /* latar peringatan */
+
+  --font-display: "Fraunces", serif;
+  --font-body: "Inter", sans-serif;
+}
+
+@theme inline {
+  --color-cream: var(--color-cream);
+  --color-peach: var(--color-peach);
+  --color-pink-soft: var(--color-pink-soft);
+  --color-pink-strong: var(--color-pink-strong);
+  --color-pink-deep: var(--color-pink-deep);
+  --color-ink: var(--color-ink);
+  --color-ink-soft: var(--color-ink-soft);
+  --color-glass: var(--color-glass);
+  --color-mint: var(--color-mint);
+  --color-mint-soft: var(--color-mint-soft);
+  --color-amber: var(--color-amber);
+  --color-amber-soft: var(--color-amber-soft);
+
+  --font-display: var(--font-display);
+  --font-body: var(--font-body);
+}
+
+* {
+  border-color: var(--color-pink-soft);
+}
+
+body {
+  background: var(--color-cream);
+  color: var(--color-ink);
+}
+
+::selection {
+  background: var(--color-pink-soft);
+  color: var(--color-ink);
+}
+
+/* Scrollbar tipis bertema, tetap fungsional di semua browser */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-pink-soft);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-pink-deep);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@keyframes rise {
+  from {
+    transform: translateY(8px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-rise {
+  animation: rise 0.4s ease-out both;
+}
+
+@keyframes coin-drop {
+  0% {
+    transform: translateY(-12px) rotate(-8deg);
+    opacity: 0;
+  }
+  60% {
+    transform: translateY(2px) rotate(4deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+.animate-coin-drop {
+  animation: coin-drop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
