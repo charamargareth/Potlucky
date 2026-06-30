@@ -25,7 +25,7 @@ export default function JoinGroupForm() {
 
   async function joinWithCode(inviteCode: string) {
     setError("");
-    const trimmed = inviteCode.trim().toUpperCase();
+    const trimmed = inviteCode.replace(/\s+/g, "").toUpperCase();
     if (trimmed.length < 4) {
       setError("Kode undangan tidak valid.");
       return;
