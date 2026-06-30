@@ -49,24 +49,26 @@ export default function NewGroupForm() {
       return;
     }
 
-    const { data, error: insertError } = await supabase
-      .rpc("create_savings_group", {
+    const { data, error: insertError } = await supabase.rpc(
+      "create_savings_group",
+      {
         p_name: name.trim(),
         p_description: description.trim() || null,
         p_target_amount: amount,
         p_target_date: targetDate || null,
         p_period_type: periodType,
-      })
-      .select()
-      .single();
+      }
+    );
 
-    if (insertError || !data) {
+    const group = data as { id: string } | null;
+
+    if (insertError || !group) {
       setError(insertError?.message ?? "Gagal membuat pot.");
       setLoading(false);
       return;
     }
 
-    router.push(`/groups/${data.id}`);
+    router.push(`/groups/${group.id}`);
   }
 
   return (
