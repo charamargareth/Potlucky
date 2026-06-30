@@ -50,14 +50,12 @@ export default function NewGroupForm() {
     }
 
     const { data, error: insertError } = await supabase
-      .from("savings_groups")
-      .insert({
-        name: name.trim(),
-        description: description.trim() || null,
-        target_amount: amount,
-        target_date: targetDate || null,
-        period_type: periodType,
-        created_by: userData.user.id,
+      .rpc("create_savings_group", {
+        p_name: name.trim(),
+        p_description: description.trim() || null,
+        p_target_amount: amount,
+        p_target_date: targetDate || null,
+        p_period_type: periodType,
       })
       .select()
       .single();
