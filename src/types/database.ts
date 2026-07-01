@@ -1,4 +1,5 @@
 export type PeriodType = "daily" | "weekly" | "monthly";
+export type GroupStatus = "active" | "completed";
 export type MemberRole = "owner" | "member";
 export type ReminderFrequency = "daily" | "weekly" | "monthly" | "off";
 export type NotificationType =
@@ -27,6 +28,7 @@ export interface SavingsGroup {
   period_type: PeriodType;
   invite_code: string;
   created_by: string;
+  status: GroupStatus;
   created_at: string;
   updated_at: string;
 }

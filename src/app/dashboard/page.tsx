@@ -2,7 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import GroupCard from "@/components/groups/GroupCard";
 import SavingsJar from "@/components/ui/SavingsJar";
-import { Plus, QrCode } from "lucide-react";
+import { Plus, QrCode, Trophy } from "lucide-react";
 import type { GroupWithStats } from "@/types/database";
 import { todayISO } from "@/lib/utils";
 
@@ -69,6 +69,8 @@ async function getGroupsWithStats(): Promise<GroupWithStats[]> {
 
 export default async function DashboardPage() {
   const groups = await getGroupsWithStats();
+  const activeGroups = groups.filter((g) => g.status !== "completed");
+  const completedGroups = groups.filter((g) => g.status === "completed");
 
   return (
     <div className="animate-rise">
@@ -78,7 +80,11 @@ export default async function DashboardPage() {
           <p className="text-sm text-ink-soft mt-0.5">
             {groups.length === 0
               ? "Belum ada pot tabungan. Mulai satu sekarang."
-              : `${groups.length} pot sedang berjalan`}
+              : `${activeGroups.length} pot aktif${
+                  completedGroups.length > 0
+                    ? `, ${completedGroups.length} sudah tercapai`
+                    : ""
+                }`}
           </p>
         </div>
         <div className="flex gap-2">
@@ -127,10 +133,28 @@ export default async function DashboardPage() {
           </div>
         </div>
       ) : (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {groups.map((group) => (
-            <GroupCard key={group.id} group={group} />
-          ))}
+        <div className="flex flex-col gap-8">
+          {activeGroups.length > 0 && (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {activeGroups.map((group) => (
+                <GroupCard key={group.id} group={group} />
+              ))}
+            </div>
+          )}
+
+          {completedGroups.length > 0 && (
+            <div>
+              <h2 className="font-display text-lg text-ink mb-3 flex items-center gap-2">
+                <Trophy className="size-4.5 text-amber" />
+                Pot tercapai
+              </h2>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {completedGroups.map((group) => (
+                  <GroupCard key={group.id} group={group} />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

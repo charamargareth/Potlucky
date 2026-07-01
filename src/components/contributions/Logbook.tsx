@@ -2,13 +2,17 @@
 
 import Image from "next/image";
 import { formatCurrency, formatDateID, getInitials } from "@/lib/utils";
-import { NotebookPen } from "lucide-react";
+import { NotebookPen, Pencil } from "lucide-react";
 import type { Contribution } from "@/types/database";
 
 export default function Logbook({
   contributions,
+  currentUserId,
+  onEditEntry,
 }: {
   contributions: Contribution[];
+  currentUserId?: string;
+  onEditEntry?: (entry: Contribution) => void;
 }) {
   if (contributions.length === 0) {
     return (
@@ -84,6 +88,15 @@ export default function Logbook({
                     <span className="text-sm font-semibold text-mint shrink-0">
                       +{formatCurrency(Number(entry.amount))}
                     </span>
+                    {onEditEntry && entry.user_id === currentUserId && (
+                      <button
+                        onClick={() => onEditEntry(entry)}
+                        aria-label="Edit catatan"
+                        className="shrink-0 size-6 flex items-center justify-center rounded-full text-ink-soft hover:bg-peach hover:text-pink-deep transition-colors"
+                      >
+                        <Pencil className="size-3" />
+                      </button>
+                    )}
                   </li>
                 ))}
               </ul>

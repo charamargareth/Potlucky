@@ -4,7 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import { formatCurrency, getInitials } from "@/lib/utils";
-import { CheckCircle2, Pencil } from "lucide-react";
+import { CheckCircle2, Pencil, UserX } from "lucide-react";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import type { GroupMember } from "@/types/database";
@@ -19,16 +19,19 @@ export default function MemberList({
   groupId,
   memberStats,
   currentUserId,
+  isOwner,
   onUpdated,
 }: {
   groupId: string;
   memberStats: MemberStat[];
   currentUserId: string;
+  isOwner: boolean;
   onUpdated: () => void;
 }) {
   const [editingTarget, setEditingTarget] = useState(false);
   const [targetInput, setTargetInput] = useState("");
   const [saving, setSaving] = useState(false);
+  const [kickingId, setKickingId] = useState<string | null>(null);
 
   async function savePersonalTarget() {
     const value = Number(targetInput.replace(/\D/g, "")) || null;
@@ -41,6 +44,28 @@ export default function MemberList({
       .eq("user_id", currentUserId);
     setSaving(false);
     setEditingTarget(false);
+    onUpdated();
+  }
+
+  async function kickMember(memberUserId: string, memberName: string) {
+    if (
+      !window.confirm(
+        `Keluarkan ${memberName} dari pot ini? Riwayat tabungannya tetap tersimpan.`
+      )
+    ) {
+      return;
+    }
+    setKickingId(memberUserId);
+    const supabase = createClient();
+    const { error } = await supabase.rpc("remove_group_member", {
+      p_group_id: groupId,
+      p_member_user_id: memberUserId,
+    });
+    setKickingId(null);
+    if (error) {
+      alert("Gagal mengeluarkan anggota: " + error.message);
+      return;
+    }
     onUpdated();
   }
 
@@ -102,6 +127,17 @@ export default function MemberList({
               <span title="Sudah nabung hari ini" className="shrink-0">
                 <CheckCircle2 className="size-5 text-mint" />
               </span>
+            )}
+
+            {isOwner && !isMe && member.role !== "owner" && (
+              <button
+                onClick={() => kickMember(member.user_id, member.profile?.full_name ?? "anggota ini")}
+                disabled={kickingId === member.user_id}
+                aria-label="Keluarkan anggota"
+                className="shrink-0 size-7 flex items-center justify-center rounded-full text-ink-soft hover:bg-amber-soft hover:text-amber transition-colors"
+              >
+                <UserX className="size-3.5" />
+              </button>
             )}
 
             {isMe && (

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Card from "@/components/ui/Card";
 import { formatCurrencyShort } from "@/lib/utils";
-import { Users, CheckCircle2 } from "lucide-react";
+import { Users, CheckCircle2, Trophy } from "lucide-react";
 import type { GroupWithStats } from "@/types/database";
 
 const periodLabelMap = {
@@ -12,10 +12,15 @@ const periodLabelMap = {
 
 export default function GroupCard({ group }: { group: GroupWithStats }) {
   const pct = Math.min(100, Math.round(group.progress_pct));
+  const isCompleted = group.status === "completed";
 
   return (
     <Link href={`/groups/${group.id}`}>
-      <Card className="p-5 hover:border-pink-strong/60 transition-colors cursor-pointer h-full flex flex-col">
+      <Card
+        className={`p-5 hover:border-pink-strong/60 transition-colors cursor-pointer h-full flex flex-col ${
+          isCompleted ? "opacity-80" : ""
+        }`}
+      >
         <div className="flex items-start justify-between mb-3">
           <div>
             <h3 className="font-display text-lg text-ink leading-tight">
@@ -25,10 +30,17 @@ export default function GroupCard({ group }: { group: GroupWithStats }) {
               Target {periodLabelMap[group.period_type]}
             </span>
           </div>
-          <div className="flex items-center gap-1 text-xs text-ink-soft bg-peach px-2.5 py-1 rounded-full">
-            <Users className="size-3.5" />
-            {group.member_count}
-          </div>
+          {isCompleted ? (
+            <div className="flex items-center gap-1 text-xs font-bold text-amber bg-amber-soft px-2.5 py-1 rounded-full">
+              <Trophy className="size-3.5" />
+              Tercapai
+            </div>
+          ) : (
+            <div className="flex items-center gap-1 text-xs text-ink-soft bg-peach px-2.5 py-1 rounded-full">
+              <Users className="size-3.5" />
+              {group.member_count}
+            </div>
+          )}
         </div>
 
         <div className="mt-auto">

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
@@ -12,6 +13,7 @@ import MemberList from "@/components/groups/MemberList";
 import ReminderSettingsModal from "@/components/groups/ReminderSettingsModal";
 import EditGroupModal from "@/components/groups/EditGroupModal";
 import AddContributionModal from "@/components/contributions/AddContributionModal";
+import EditContributionModal from "@/components/contributions/EditContributionModal";
 import SavingsChart from "@/components/contributions/SavingsChart";
 import Logbook from "@/components/contributions/Logbook";
 import {
@@ -22,6 +24,10 @@ import {
   TrendingUp,
   NotebookPen,
   Pencil,
+  Trash2,
+  LogOut,
+  Trophy,
+  RotateCcw,
 } from "lucide-react";
 import { formatCurrency, formatDateID, todayISO } from "@/lib/utils";
 import type {
@@ -34,6 +40,7 @@ import type {
 const periodLabelMap = { daily: "Harian", weekly: "Mingguan", monthly: "Bulanan" };
 
 export default function GroupDetailView({ groupId }: { groupId: string }) {
+  const router = useRouter();
   const [group, setGroup] = useState<SavingsGroup | null>(null);
   const [members, setMembers] = useState<GroupMember[]>([]);
   const [contributions, setContributions] = useState<Contribution[]>([]);
@@ -46,6 +53,8 @@ export default function GroupDetailView({ groupId }: { groupId: string }) {
   const [showAddContribution, setShowAddContribution] = useState(false);
   const [showReminderSettings, setShowReminderSettings] = useState(false);
   const [showEditGroup, setShowEditGroup] = useState(false);
+  const [editingEntry, setEditingEntry] = useState<Contribution | null>(null);
+  const [busy, setBusy] = useState(false);
 
   const loadData = useCallback(async () => {
     const supabase = createClient();
@@ -131,6 +140,60 @@ export default function GroupDetailView({ groupId }: { groupId: string }) {
     contributedToday: contributedTodayUserIds.has(member.user_id),
   }));
 
+  const isOwner = currentUserId === group.created_by;
+  const isCompleted = group.status === "completed";
+
+  async function handleDeleteGroup() {
+    if (
+      !window.confirm(
+        `Hapus pot "${group!.name}" secara permanen? Semua catatan tabungan dan anggota di dalamnya akan ikut terhapus. Tindakan ini tidak bisa dibatalkan.`
+      )
+    ) {
+      return;
+    }
+    setBusy(true);
+    const supabase = createClient();
+    const { error } = await supabase.rpc("delete_savings_group", {
+      p_group_id: groupId,
+    });
+    setBusy(false);
+    if (error) {
+      alert("Gagal menghapus pot: " + error.message);
+      return;
+    }
+    router.push("/dashboard");
+  }
+
+  async function handleLeaveGroup() {
+    if (!window.confirm(`Keluar dari pot "${group!.name}"?`)) return;
+    setBusy(true);
+    const supabase = createClient();
+    const { error } = await supabase.rpc("leave_group", {
+      p_group_id: groupId,
+    });
+    setBusy(false);
+    if (error) {
+      alert("Gagal keluar dari pot: " + error.message);
+      return;
+    }
+    router.push("/dashboard");
+  }
+
+  async function handleToggleStatus() {
+    setBusy(true);
+    const supabase = createClient();
+    const { data, error } = await supabase.rpc("set_group_status", {
+      p_group_id: groupId,
+      p_status: isCompleted ? "active" : "completed",
+    });
+    setBusy(false);
+    if (error) {
+      alert("Gagal mengubah status pot: " + error.message);
+      return;
+    }
+    setGroup(data as SavingsGroup);
+  }
+
   return (
     <div className="animate-rise">
       <Link
@@ -146,7 +209,15 @@ export default function GroupDetailView({ groupId }: { groupId: string }) {
         <Card className="flex-1 p-6 flex flex-col md:flex-row gap-6 items-center">
           <SavingsJar fillPercent={pct} className="w-28 shrink-0" />
           <div className="flex-1 text-center md:text-left">
-            <h1 className="font-display text-2xl text-ink mb-1">{group.name}</h1>
+            <div className="flex items-center gap-2 justify-center md:justify-start mb-1 flex-wrap">
+              <h1 className="font-display text-2xl text-ink">{group.name}</h1>
+              {isCompleted && (
+                <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wide text-amber bg-amber-soft px-2.5 py-1 rounded-full">
+                  <Trophy className="size-3.5" />
+                  Tercapai
+                </span>
+              )}
+            </div>
             {group.description && (
               <p className="text-sm text-ink-soft mb-3">{group.description}</p>
             )}
@@ -189,10 +260,46 @@ export default function GroupDetailView({ groupId }: { groupId: string }) {
           <BellRing className="size-4" />
           Pengingat
         </Button>
-        {currentUserId === group.created_by && (
+        {isOwner && (
           <Button variant="outline" onClick={() => setShowEditGroup(true)}>
             <Pencil className="size-4" />
             Edit pot
+          </Button>
+        )}
+        {isOwner && (
+          <Button variant="outline" onClick={handleToggleStatus} disabled={busy}>
+            {isCompleted ? (
+              <>
+                <RotateCcw className="size-4" />
+                Aktifkan lagi
+              </>
+            ) : (
+              <>
+                <Trophy className="size-4" />
+                Tandai selesai
+              </>
+            )}
+          </Button>
+        )}
+        {isOwner ? (
+          <Button
+            variant="outline"
+            onClick={handleDeleteGroup}
+            disabled={busy}
+            className="text-amber hover:bg-amber-soft border-amber/30"
+          >
+            <Trash2 className="size-4" />
+            Hapus pot
+          </Button>
+        ) : (
+          <Button
+            variant="outline"
+            onClick={handleLeaveGroup}
+            disabled={busy}
+            className="text-amber hover:bg-amber-soft border-amber/30"
+          >
+            <LogOut className="size-4" />
+            Keluar dari pot
           </Button>
         )}
       </div>
@@ -241,6 +348,7 @@ export default function GroupDetailView({ groupId }: { groupId: string }) {
                 groupId={groupId}
                 memberStats={memberStats}
                 currentUserId={currentUserId}
+                isOwner={isOwner}
                 onUpdated={loadData}
               />
             </Card>
@@ -258,7 +366,11 @@ export default function GroupDetailView({ groupId }: { groupId: string }) {
         </div>
       ) : (
         <Card className="p-5">
-          <Logbook contributions={contributions} />
+          <Logbook
+            contributions={contributions}
+            currentUserId={currentUserId}
+            onEditEntry={(entry) => setEditingEntry(entry)}
+          />
         </Card>
       )}
 
@@ -283,6 +395,23 @@ export default function GroupDetailView({ groupId }: { groupId: string }) {
           group={group}
           onClose={() => setShowEditGroup(false)}
           onSaved={(updated) => setGroup(updated)}
+        />
+      )}
+      {editingEntry && (
+        <EditContributionModal
+          contribution={editingEntry}
+          canDelete={
+            editingEntry.user_id === currentUserId || currentUserId === group.created_by
+          }
+          onClose={() => setEditingEntry(null)}
+          onSaved={() => {
+            setEditingEntry(null);
+            loadData();
+          }}
+          onDeleted={() => {
+            setEditingEntry(null);
+            loadData();
+          }}
         />
       )}
     </div>
