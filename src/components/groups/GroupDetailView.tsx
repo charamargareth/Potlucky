@@ -14,6 +14,7 @@ import ReminderSettingsModal from "@/components/groups/ReminderSettingsModal";
 import EditGroupModal from "@/components/groups/EditGroupModal";
 import AddContributionModal from "@/components/contributions/AddContributionModal";
 import EditContributionModal from "@/components/contributions/EditContributionModal";
+import ExportButton from "@/components/contributions/ExportButton";
 import SavingsChart from "@/components/contributions/SavingsChart";
 import Logbook from "@/components/contributions/Logbook";
 import {
@@ -305,29 +306,36 @@ export default function GroupDetailView({ groupId }: { groupId: string }) {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1.5 mb-5 border-b border-pink-soft/60">
-        <button
-          onClick={() => setView("overview")}
-          className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${
-            view === "overview"
-              ? "border-pink-strong text-ink"
-              : "border-transparent text-ink-soft hover:text-ink"
-          }`}
-        >
-          <TrendingUp className="size-4" />
-          Ringkasan
-        </button>
-        <button
-          onClick={() => setView("logbook")}
-          className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${
-            view === "logbook"
-              ? "border-pink-strong text-ink"
-              : "border-transparent text-ink-soft hover:text-ink"
-          }`}
-        >
-          <NotebookPen className="size-4" />
-          Logbook
-        </button>
+      <div className="flex items-center justify-between mb-5 border-b border-pink-soft/60">
+        <div className="flex gap-1.5">
+          <button
+            onClick={() => setView("overview")}
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${
+              view === "overview"
+                ? "border-pink-strong text-ink"
+                : "border-transparent text-ink-soft hover:text-ink"
+            }`}
+          >
+            <TrendingUp className="size-4" />
+            Ringkasan
+          </button>
+          <button
+            onClick={() => setView("logbook")}
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${
+              view === "logbook"
+                ? "border-pink-strong text-ink"
+                : "border-transparent text-ink-soft hover:text-ink"
+            }`}
+          >
+            <NotebookPen className="size-4" />
+            Logbook
+          </button>
+        </div>
+        {view === "logbook" && (
+          <div className="pb-1">
+            <ExportButton group={group} contributions={contributions} />
+          </div>
+        )}
       </div>
 
       {view === "overview" ? (

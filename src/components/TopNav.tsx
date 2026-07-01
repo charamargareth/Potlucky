@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { getInitials } from "@/lib/utils";
-import { LogOut } from "lucide-react";
+import { LogOut, Activity } from "lucide-react";
 import NotificationBell from "@/components/notifications/NotificationBell";
 import type { Profile } from "@/types/database";
 
@@ -26,23 +26,33 @@ export default function TopNav({ profile }: { profile: Profile | null }) {
           Potlucky
         </Link>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          <Link
+            href="/activity"
+            aria-label="Aktivitas"
+            className="size-9 flex items-center justify-center rounded-full text-ink-soft hover:bg-peach hover:text-pink-deep transition-colors"
+          >
+            <Activity className="size-5" />
+          </Link>
+
           <NotificationBell />
 
           <div className="flex items-center gap-2.5 pl-3 border-l border-pink-soft/60">
-            {profile?.avatar_url ? (
-              <Image
-                src={profile.avatar_url}
-                alt={profile.full_name ?? "Avatar"}
-                width={32}
-                height={32}
-                className="size-8 rounded-full object-cover"
-              />
-            ) : (
-              <div className="size-8 rounded-full bg-pink-soft flex items-center justify-center text-xs font-semibold text-pink-deep">
-                {getInitials(profile?.full_name)}
-              </div>
-            )}
+            <Link href="/profile" aria-label="Profil kamu" className="shrink-0">
+              {profile?.avatar_url ? (
+                <Image
+                  src={profile.avatar_url}
+                  alt={profile.full_name ?? "Avatar"}
+                  width={32}
+                  height={32}
+                  className="size-8 rounded-full object-cover hover:ring-2 hover:ring-pink-strong transition-all"
+                />
+              ) : (
+                <div className="size-8 rounded-full bg-pink-soft flex items-center justify-center text-xs font-semibold text-pink-deep hover:ring-2 hover:ring-pink-strong transition-all">
+                  {getInitials(profile?.full_name)}
+                </div>
+              )}
+            </Link>
             <span className="hidden sm:block text-sm font-medium text-ink max-w-[120px] truncate">
               {profile?.full_name ?? "Pengguna"}
             </span>
