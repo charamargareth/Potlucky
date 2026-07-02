@@ -21,8 +21,8 @@ export default function TopNav({ profile }: { profile: Profile | null }) {
 
   return (
     <header className="sticky top-0 z-30 bg-cream/90 backdrop-blur-sm border-b border-pink-soft/60">
-      <div className="max-w-5xl mx-auto px-5 h-16 flex items-center justify-between">
-        <Link href="/dashboard" className="font-display text-xl text-ink">
+      <div className="max-w-7xl mx-auto px-5 h-16 flex items-center justify-between">
+        <Link href="/dashboard" className="font-display text-2xl text-ink">
           Potlucky
         </Link>
 
