@@ -13,6 +13,7 @@ import MemberList from "@/components/groups/MemberList";
 import ReminderSettingsModal from "@/components/groups/ReminderSettingsModal";
 import EditGroupModal from "@/components/groups/EditGroupModal";
 import AddContributionModal from "@/components/contributions/AddContributionModal";
+import WithdrawalModal from "@/components/contributions/WithdrawalModal";
 import EditContributionModal from "@/components/contributions/EditContributionModal";
 import ExportButton from "@/components/contributions/ExportButton";
 import SavingsChart from "@/components/contributions/SavingsChart";
@@ -21,6 +22,7 @@ import {
   ChevronLeft,
   UserPlus,
   Plus,
+  Minus,
   BellRing,
   TrendingUp,
   NotebookPen,
@@ -52,6 +54,7 @@ export default function GroupDetailView({ groupId }: { groupId: string }) {
 
   const [showInvite, setShowInvite] = useState(false);
   const [showAddContribution, setShowAddContribution] = useState(false);
+  const [showWithdrawal, setShowWithdrawal] = useState(false);
   const [showReminderSettings, setShowReminderSettings] = useState(false);
   const [showEditGroup, setShowEditGroup] = useState(false);
   const [editingEntry, setEditingEntry] = useState<Contribution | null>(null);
@@ -127,7 +130,13 @@ export default function GroupDetailView({ groupId }: { groupId: string }) {
     );
   }
 
-  const totalSaved = contributions.reduce((s, c) => s + Number(c.amount), 0);
+  const totalDeposit = contributions
+    .filter((c) => c.type !== "withdrawal")
+    .reduce((s, c) => s + Number(c.amount), 0);
+  const totalWithdrawal = contributions
+    .filter((c) => c.type === "withdrawal")
+    .reduce((s, c) => s + Number(c.amount), 0);
+  const totalSaved = totalDeposit - totalWithdrawal;
   const pct = group.target_amount > 0 ? Math.min(100, (totalSaved / group.target_amount) * 100) : 0;
   const today = todayISO();
   const contributedTodayUserIds = new Set(
@@ -230,6 +239,12 @@ export default function GroupDetailView({ groupId }: { groupId: string }) {
                 dari target {formatCurrency(group.target_amount)}
               </span>
             </div>
+            {totalWithdrawal > 0 && (
+              <div className="flex gap-3 mb-2 text-xs justify-center md:justify-start">
+                <span className="text-mint font-semibold">+{formatCurrency(totalDeposit)} ditabung</span>
+                <span className="text-amber font-semibold">-{formatCurrency(totalWithdrawal)} dipakai</span>
+              </div>
+            )}
             <div className="h-3 w-full rounded-full bg-peach overflow-hidden mb-2">
               <div
                 className="h-full rounded-full bg-pink-strong transition-all duration-700"
@@ -252,6 +267,14 @@ export default function GroupDetailView({ groupId }: { groupId: string }) {
         <Button onClick={() => setShowAddContribution(true)}>
           <Plus className="size-4" />
           Catat tabungan
+        </Button>
+        <Button
+          variant="outline"
+          onClick={() => setShowWithdrawal(true)}
+          className="border-amber/40 text-amber hover:bg-amber-soft"
+        >
+          <Minus className="size-4" />
+          Catat pemakaian
         </Button>
         <Button variant="outline" onClick={() => setShowInvite(true)}>
           <UserPlus className="size-4" />
@@ -391,6 +414,17 @@ export default function GroupDetailView({ groupId }: { groupId: string }) {
           onClose={() => setShowAddContribution(false)}
           onSuccess={() => {
             setShowAddContribution(false);
+            loadData();
+          }}
+        />
+      )}
+      {showWithdrawal && (
+        <WithdrawalModal
+          groupId={groupId}
+          currentSaldo={totalSaved}
+          onClose={() => setShowWithdrawal(false)}
+          onSuccess={() => {
+            setShowWithdrawal(false);
             loadData();
           }}
         />

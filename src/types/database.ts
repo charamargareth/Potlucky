@@ -48,6 +48,7 @@ export interface Contribution {
   group_id: string;
   user_id: string;
   amount: number;
+  type: "deposit" | "withdrawal";
   note: string | null;
   contributed_on: string;
   created_at: string;

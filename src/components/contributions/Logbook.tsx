@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { formatCurrency, formatDateID, getInitials } from "@/lib/utils";
-import { NotebookPen, Pencil } from "lucide-react";
+import { NotebookPen, Pencil, Plus, Minus } from "lucide-react";
 import type { Contribution } from "@/types/database";
 
 export default function Logbook({
@@ -25,16 +25,13 @@ export default function Logbook({
     );
   }
 
-  // Kelompokkan per tanggal, urut dari yang terbaru
   const grouped = new Map<string, Contribution[]>();
   for (const c of contributions) {
     const key = c.contributed_on;
     if (!grouped.has(key)) grouped.set(key, []);
     grouped.get(key)!.push(c);
   }
-  const sortedDates = Array.from(grouped.keys()).sort((a, b) =>
-    b.localeCompare(a)
-  );
+  const sortedDates = Array.from(grouped.keys()).sort((a, b) => b.localeCompare(a));
 
   return (
     <div className="relative">
@@ -42,63 +39,88 @@ export default function Logbook({
       <ul className="flex flex-col gap-6">
         {sortedDates.map((date) => {
           const entries = grouped.get(date)!;
-          const dayTotal = entries.reduce((s, e) => s + Number(e.amount), 0);
+          const deposits = entries.filter((e) => e.type !== "withdrawal");
+          const withdrawals = entries.filter((e) => e.type === "withdrawal");
+          const dayNet =
+            deposits.reduce((s, e) => s + Number(e.amount), 0) -
+            withdrawals.reduce((s, e) => s + Number(e.amount), 0);
+
           return (
             <li key={date} className="relative pl-9">
               <div className="absolute left-0 top-0.5 size-[31px] rounded-full bg-pink-strong border-4 border-cream flex items-center justify-center">
                 <span className="size-2 rounded-full bg-white" />
               </div>
               <div className="flex items-baseline justify-between mb-2">
-                <span className="font-semibold text-ink text-sm">
-                  {formatDateID(date)}
-                </span>
-                <span className="text-xs text-ink-soft">
-                  Total {formatCurrency(dayTotal)}
+                <span className="font-semibold text-ink text-sm">{formatDateID(date)}</span>
+                <span className={`text-xs font-semibold ${dayNet >= 0 ? "text-mint" : "text-amber"}`}>
+                  {dayNet >= 0 ? "+" : ""}{formatCurrency(dayNet)}
                 </span>
               </div>
               <ul className="flex flex-col gap-2">
-                {entries.map((entry) => (
-                  <li
-                    key={entry.id}
-                    className="flex items-center gap-3 bg-glass border border-pink-soft/60 rounded-xl px-3.5 py-2.5"
-                  >
-                    {entry.profile?.avatar_url ? (
-                      <Image
-                        src={entry.profile.avatar_url}
-                        alt=""
-                        width={28}
-                        height={28}
-                        className="size-7 rounded-full object-cover shrink-0"
-                      />
-                    ) : (
-                      <div className="size-7 rounded-full bg-pink-soft flex items-center justify-center text-[10px] font-semibold text-pink-deep shrink-0">
-                        {getInitials(entry.profile?.full_name)}
+                {entries.map((entry) => {
+                  const isWithdrawal = entry.type === "withdrawal";
+                  return (
+                    <li
+                      key={entry.id}
+                      className={`flex items-center gap-3 border rounded-xl px-3.5 py-2.5 ${
+                        isWithdrawal
+                          ? "bg-amber-soft/40 border-amber/30"
+                          : "bg-glass border-pink-soft/60"
+                      }`}
+                    >
+                      {/* Avatar / type icon */}
+                      <div className="relative shrink-0">
+                        {entry.profile?.avatar_url ? (
+                          <Image
+                            src={entry.profile.avatar_url}
+                            alt=""
+                            width={28}
+                            height={28}
+                            className="size-7 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="size-7 rounded-full bg-pink-soft flex items-center justify-center text-[10px] font-semibold text-pink-deep">
+                            {getInitials(entry.profile?.full_name)}
+                          </div>
+                        )}
+                        <div className={`absolute -bottom-0.5 -right-0.5 size-3.5 rounded-full flex items-center justify-center ${isWithdrawal ? "bg-amber" : "bg-mint"}`}>
+                          {isWithdrawal
+                            ? <Minus className="size-2 text-white" />
+                            : <Plus className="size-2 text-white" />
+                          }
+                        </div>
                       </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-ink font-medium truncate">
-                        {entry.profile?.full_name ?? "Anggota"}
-                      </p>
-                      {entry.note && (
-                        <p className="text-xs text-ink-soft truncate">
-                          {entry.note}
+
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-ink font-medium truncate">
+                          {entry.profile?.full_name ?? "Anggota"}
+                          {isWithdrawal && (
+                            <span className="ml-1.5 text-[10px] font-semibold text-amber bg-amber-soft px-1.5 py-0.5 rounded-full">
+                              dipakai
+                            </span>
+                          )}
                         </p>
+                        {entry.note && (
+                          <p className="text-xs text-ink-soft truncate">{entry.note}</p>
+                        )}
+                      </div>
+
+                      <span className={`text-sm font-semibold shrink-0 ${isWithdrawal ? "text-amber" : "text-mint"}`}>
+                        {isWithdrawal ? "-" : "+"}{formatCurrency(Number(entry.amount))}
+                      </span>
+
+                      {onEditEntry && entry.user_id === currentUserId && (
+                        <button
+                          onClick={() => onEditEntry(entry)}
+                          aria-label="Edit catatan"
+                          className="shrink-0 size-6 flex items-center justify-center rounded-full text-ink-soft hover:bg-peach hover:text-pink-deep transition-colors"
+                        >
+                          <Pencil className="size-3" />
+                        </button>
                       )}
-                    </div>
-                    <span className="text-sm font-semibold text-mint shrink-0">
-                      +{formatCurrency(Number(entry.amount))}
-                    </span>
-                    {onEditEntry && entry.user_id === currentUserId && (
-                      <button
-                        onClick={() => onEditEntry(entry)}
-                        aria-label="Edit catatan"
-                        className="shrink-0 size-6 flex items-center justify-center rounded-full text-ink-soft hover:bg-peach hover:text-pink-deep transition-colors"
-                      >
-                        <Pencil className="size-3" />
-                      </button>
-                    )}
-                  </li>
-                ))}
+                    </li>
+                  );
+                })}
               </ul>
             </li>
           );
