@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import DashboardClient from "@/components/dashboard/DashboardClient";
-import type { GroupWithStats } from "@/types/database";
+import type { GroupWithStats, AppNotification, GroupMember } from "@/types/database";
 import { todayISO } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -33,7 +33,7 @@ async function getGroupsWithStats(): Promise<GroupWithStats[]> {
       const [{ data: contributions }, { count: memberCount }] = await Promise.all([
         supabase
           .from("contributions")
-          .select("amount, user_id, contributed_on")
+          .select("amount, user_id, contributed_on, type")
           .eq("group_id", group.id),
         supabase
           .from("group_members")
@@ -41,12 +41,15 @@ async function getGroupsWithStats(): Promise<GroupWithStats[]> {
           .eq("group_id", group.id),
       ]);
 
-      const totalSaved =
-        contributions?.reduce((sum, c) => sum + Number(c.amount), 0) ?? 0;
+      const totalSaved = (contributions ?? []).reduce((sum, c) => {
+        return c.type === "withdrawal"
+          ? sum - Number(c.amount)
+          : sum + Number(c.amount);
+      }, 0);
 
       const contributedTodayUsers = new Set(
         (contributions ?? [])
-          .filter((c) => c.contributed_on === today)
+          .filter((c) => c.contributed_on === today && c.type !== "withdrawal")
           .map((c) => c.user_id)
       );
 
@@ -64,7 +67,46 @@ async function getGroupsWithStats(): Promise<GroupWithStats[]> {
   return results;
 }
 
+async function getRecentActivity(): Promise<(AppNotification & { group_name?: string })[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("notifications")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(8);
+  return (data ?? []) as (AppNotification & { group_name?: string })[];
+}
+
+async function getAllMembers(groupIds: string[]): Promise<(GroupMember & { group_name?: string })[]> {
+  if (groupIds.length === 0) return [];
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("group_members")
+    .select("*, profile:profiles(id, full_name, avatar_url, email)")
+    .in("group_id", groupIds);
+  return (data ?? []) as (GroupMember & { group_name?: string })[];
+}
+
 export default async function DashboardPage() {
   const groups = await getGroupsWithStats();
-  return <DashboardClient groups={groups} />;
+  const groupIds = groups.map((g) => g.id);
+
+  const [activity, members] = await Promise.all([
+    getRecentActivity(),
+    getAllMembers(groupIds),
+  ]);
+
+  // Attach group names to members
+  const membersWithGroup = members.map((m) => ({
+    ...m,
+    group_name: groups.find((g) => g.id === m.group_id)?.name ?? "",
+  }));
+
+  return (
+    <DashboardClient
+      groups={groups}
+      recentActivity={activity}
+      allMembers={membersWithGroup}
+    />
+  );
 }
