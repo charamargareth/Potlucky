@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { getInitials } from "@/lib/utils";
-import { LogOut, Activity } from "lucide-react";
+import { LogOut, Activity, BookOpen } from "lucide-react";
 import NotificationBell from "@/components/notifications/NotificationBell";
 import type { Profile } from "@/types/database";
 
@@ -27,6 +27,14 @@ export default function TopNav({ profile }: { profile: Profile | null }) {
         </Link>
 
         <div className="flex items-center gap-2">
+          <Link
+            href="/guide"
+            aria-label="Panduan"
+            className="size-9 flex items-center justify-center rounded-full text-ink-soft hover:bg-peach hover:text-pink-deep transition-colors"
+          >
+            <BookOpen className="size-5" />
+          </Link>
+
           <Link
             href="/activity"
             aria-label="Aktivitas"
