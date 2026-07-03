@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import { getInitials, formatCurrency } from "@/lib/utils";
 import {
   ChevronLeft, Camera, CheckCircle2, User, Mail, Calendar,
-  Shield, Bell, LogOut, PiggyBank, Users, TrendingUp, Pencil, X,
+  Shield, Bell, LogOut, PiggyBank, Users, TrendingUp, Pencil, X, AtSign, AlertCircle,
 } from "lucide-react";
 import type { Profile } from "@/types/database";
 
@@ -93,10 +93,16 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [stats, setStats] = useState<Stats | null>(null);
   const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
   const [editingName, setEditingName] = useState(false);
+  const [editingUsername, setEditingUsername] = useState(false);
+  const [usernameChecking, setUsernameChecking] = useState(false);
+  const [usernameTaken, setUsernameTaken] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [savingUsername, setSavingUsername] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [savedUsername, setSavedUsername] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -114,6 +120,7 @@ export default function ProfilePage() {
       if (profileData) {
         setProfile(profileData);
         setName(profileData.full_name ?? "");
+        setUsername(profileData.username ?? "");
       }
 
       const totalSaved = (contributions ?? []).reduce((s, c) => {
@@ -183,6 +190,36 @@ export default function ProfilePage() {
     setEditingName(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
+  }
+
+  async function checkUsername(val: string) {
+    if (val.length < 3) return;
+    setUsernameChecking(true);
+    const supabase = createClient();
+    const { data } = await supabase.rpc("is_username_taken", { p_username: val });
+    setUsernameTaken(!!data);
+    setUsernameChecking(false);
+  }
+
+  async function handleSaveUsername() {
+    if (!username.trim()) { setError("Username tidak boleh kosong."); return; }
+    if (username.length < 3) { setError("Username minimal 3 karakter."); return; }
+    if (!/^[a-zA-Z0-9_]+$/.test(username)) { setError("Username hanya boleh huruf, angka, dan underscore."); return; }
+    if (usernameTaken) { setError("Username sudah digunakan."); return; }
+
+    setError("");
+    setSavingUsername(true);
+    const supabase = createClient();
+
+    const { error: updateError } = await supabase.rpc("update_username", { p_username: username.toLowerCase().trim() });
+
+    setSavingUsername(false);
+    if (updateError) { setError("Gagal menyimpan username: " + updateError.message); return; }
+
+    setProfile((p) => p ? { ...p, username: username.toLowerCase().trim() } : p);
+    setEditingUsername(false);
+    setSavedUsername(true);
+    setTimeout(() => setSavedUsername(false), 2500);
   }
 
   async function handleSignOut() {
@@ -349,6 +386,90 @@ export default function ProfilePage() {
                       <Pencil className="size-3.5" />
                     </button>
                   </div>
+                )}
+              </div>
+
+              {/* Username */}
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-semibold text-ink-soft uppercase tracking-wide mb-2">
+                  Username
+                </label>
+                {editingUsername ? (
+                  <div className="flex flex-col gap-2">
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <AtSign className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-ink-soft" />
+                        <input
+                          autoFocus
+                          value={username}
+                          onChange={(e) => {
+                            const val = e.target.value.replace(/[^a-zA-Z0-9_]/g, "").toLowerCase();
+                            setUsername(val);
+                            setUsernameTaken(false);
+                            if (val.length >= 3 && val !== profile.username) {
+                              setTimeout(() => checkUsername(val), 600);
+                            }
+                          }}
+                          onKeyDown={(e) => e.key === "Enter" && handleSaveUsername()}
+                          className={`w-full pl-10 pr-9 py-2.5 rounded-xl border text-sm text-ink outline-none transition-colors ${
+                            usernameTaken ? "border-amber bg-amber-soft/20" : "border-pink-soft bg-glass focus:border-pink-strong"
+                          }`}
+                          placeholder="username_kamu"
+                        />
+                        {username.length >= 3 && username !== profile.username && (
+                          <div className="absolute right-3.5 top-1/2 -translate-y-1/2">
+                            {usernameChecking ? (
+                              <span className="size-3.5 border-2 border-pink-soft border-t-pink-strong rounded-full animate-spin block" />
+                            ) : usernameTaken ? (
+                              <AlertCircle className="size-4 text-amber" />
+                            ) : (
+                              <CheckCircle2 className="size-4 text-mint" />
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      <button
+                        onClick={handleSaveUsername}
+                        disabled={savingUsername || usernameTaken}
+                        className="h-10 px-4 rounded-xl bg-pink-strong text-white text-sm font-semibold hover:bg-pink-deep transition-colors disabled:opacity-60"
+                      >
+                        {savingUsername ? "…" : "Simpan"}
+                      </button>
+                      <button
+                        onClick={() => { setEditingUsername(false); setUsername(profile.username ?? ""); setUsernameTaken(false); }}
+                        className="size-10 flex items-center justify-center rounded-xl border border-pink-soft text-ink-soft hover:bg-peach transition-colors"
+                      >
+                        <X className="size-4" />
+                      </button>
+                    </div>
+                    {usernameTaken && (
+                      <p className="text-[11px] text-amber ml-1">Username sudah digunakan, coba yang lain.</p>
+                    )}
+                    {!usernameTaken && username.length >= 3 && !usernameChecking && username !== profile.username && (
+                      <p className="text-[11px] text-mint ml-1">Username tersedia!</p>
+                    )}
+                    <p className="text-[11px] text-ink-soft ml-1">Hanya huruf, angka, dan underscore. Min. 3 karakter.</p>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between p-3.5 rounded-xl border border-pink-soft bg-peach/30">
+                    <div className="flex items-center gap-2">
+                      <AtSign className="size-3.5 text-ink-soft" />
+                      <span className="text-sm text-ink font-medium">
+                        {profile.username ?? <span className="text-ink-soft italic">Belum diset</span>}
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => setEditingUsername(true)}
+                      className="size-7 flex items-center justify-center rounded-lg text-ink-soft hover:bg-peach hover:text-pink-deep transition-colors"
+                    >
+                      <Pencil className="size-3.5" />
+                    </button>
+                  </div>
+                )}
+                {savedUsername && (
+                  <p className="text-[11px] text-mint mt-1.5 ml-1 flex items-center gap-1">
+                    <CheckCircle2 className="size-3" /> Username berhasil disimpan
+                  </p>
                 )}
               </div>
 
