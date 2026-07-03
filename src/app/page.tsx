@@ -145,8 +145,22 @@ export default function LandingPage() {
               tabungan untuk satu tujuan bersama — liburan, kado, atau
               dana darurat keluarga. Tercatat rapi, terlihat semua orang.
             </p>
-            <div className="max-w-xs">
+            <div className="max-w-xs flex flex-col gap-3">
               <GoogleLoginButton />
+              <div className="flex gap-2">
+                <Link
+                  href="/signin"
+                  className="flex-1 inline-flex items-center justify-center h-11 rounded-xl border border-pink-soft text-ink text-sm font-semibold hover:bg-peach transition-colors"
+                >
+                  Masuk
+                </Link>
+                <Link
+                  href="/signup"
+                  className="flex-1 inline-flex items-center justify-center h-11 rounded-xl border border-pink-strong text-pink-deep text-sm font-semibold hover:bg-pink-soft/40 transition-colors"
+                >
+                  Daftar
+                </Link>
+              </div>
             </div>
             <p className="text-xs text-ink-soft mt-3">
               Gratis selamanya · Login dengan akun Google · Tidak perlu kartu kredit
@@ -229,8 +243,14 @@ export default function LandingPage() {
               </div>
             ))}
           </div>
-          <div className="text-center mt-10">
+          <div className="text-center mt-10 flex flex-col sm:flex-row gap-3 justify-center">
             <GoogleLoginButton />
+            <Link
+              href="/signup"
+              className="inline-flex items-center justify-center h-11 px-6 rounded-xl border border-pink-strong text-pink-deep text-sm font-semibold hover:bg-pink-soft/40 transition-colors"
+            >
+              Daftar dengan Email
+            </Link>
           </div>
         </div>
       </section>
