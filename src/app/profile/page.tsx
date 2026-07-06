@@ -140,7 +140,6 @@ export default function ProfilePage() {
   async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) { setError("Ukuran foto maksimal 2MB."); return; }
 
     setError("");
     setUploading(true);
@@ -288,7 +287,7 @@ export default function ProfilePage() {
             </span>
 
             <p className="text-[11px] text-ink-soft">
-              JPG, PNG, WebP · maks. 2MB
+              JPG, PNG, atau WebP
             </p>
           </div>
 
