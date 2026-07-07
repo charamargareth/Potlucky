@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { getInitials } from "@/lib/utils";
 import { LogOut, Activity, BookOpen } from "lucide-react";
 import NotificationBell from "@/components/notifications/NotificationBell";
+import ThemeToggle from "@/components/ThemeToggle";
 import type { Profile } from "@/types/database";
 
 export default function TopNav({ profile }: { profile: Profile | null }) {
@@ -34,6 +35,8 @@ export default function TopNav({ profile }: { profile: Profile | null }) {
           >
             <BookOpen className="size-5" />
           </Link>
+
+          <ThemeToggle />
 
           <Link
             href="/activity"

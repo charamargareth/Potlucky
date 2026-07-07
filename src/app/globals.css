@@ -19,6 +19,22 @@
   --font-body: "Inter", sans-serif;
 }
 
+/* Dark mode — override semua token warna */
+.dark {
+  --color-cream: #1a1015;
+  --color-peach: #2a1d22;
+  --color-pink-soft: #3d2330;
+  --color-pink-strong: #ff6b8a;
+  --color-pink-deep: #ff8fa3;
+  --color-ink: #f5e6ea;
+  --color-ink-soft: #b89aa2;
+  --color-glass: #221519;
+  --color-mint: #4dcc93;
+  --color-mint-soft: #0d2e1e;
+  --color-amber: #e8a040;
+  --color-amber-soft: #2d1e08;
+}
+
 @theme inline {
   --color-cream: var(--color-cream);
   --color-peach: var(--color-peach);
