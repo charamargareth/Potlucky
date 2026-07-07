@@ -125,7 +125,7 @@ export default function JoinGroupForm() {
   }
 
   return (
-    <div className="max-w-lg mx-auto animate-rise">
+    <div className="animate-rise">
       <Link
         href="/dashboard"
         className="inline-flex items-center gap-1.5 text-sm text-ink-soft hover:text-pink-deep mb-5 transition-colors"
@@ -134,76 +134,90 @@ export default function JoinGroupForm() {
         Kembali
       </Link>
 
-      <h1 className="font-display text-2xl text-ink mb-1">
-        Gabung ke pot
-      </h1>
-      <p className="text-sm text-ink-soft mb-6">
-        Masukkan kode undangan dari teman, atau pindai QR code-nya.
-      </p>
+      <div className="flex flex-col lg:flex-row gap-8 items-start">
+        {/* Form utama */}
+        <div className="w-full lg:max-w-lg">
+          <h1 className="font-display text-2xl text-ink mb-1">Gabung ke pot</h1>
+          <p className="text-sm text-ink-soft mb-6">
+            Masukkan kode undangan dari teman, atau pindai QR code-nya.
+          </p>
 
-      <Card className="p-6">
-        {scanning ? (
-          <div className="flex flex-col gap-4">
-            <div className="relative rounded-2xl overflow-hidden bg-ink aspect-square">
-              <video
-                ref={videoRef}
-                className="w-full h-full object-cover"
-                muted
-                playsInline
-              />
-              <div className="absolute inset-8 border-2 border-pink-soft rounded-2xl" />
-            </div>
-            <canvas ref={canvasRef} className="hidden" />
-            <Button
-              type="button"
-              variant="outline"
-              onClick={stopScan}
-              className="w-full"
-            >
-              <X className="size-4" />
-              Batalkan pindai
-            </Button>
+          <Card className="p-6">
+            {scanning ? (
+              <div className="flex flex-col gap-4">
+                <div className="relative rounded-2xl overflow-hidden bg-ink aspect-square">
+                  <video ref={videoRef} className="w-full h-full object-cover" muted playsInline />
+                  <div className="absolute inset-8 border-2 border-pink-soft rounded-2xl" />
+                </div>
+                <canvas ref={canvasRef} className="hidden" />
+                <Button type="button" variant="outline" onClick={stopScan} className="w-full">
+                  <X className="size-4" />
+                  Batalkan pindai
+                </Button>
+              </div>
+            ) : (
+              <>
+                <Button type="button" variant="secondary" onClick={startScan} className="w-full mb-5" size="lg">
+                  <Camera className="size-5" />
+                  Pindai QR code
+                </Button>
+
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="flex-1 h-px bg-pink-soft" />
+                  <span className="text-xs text-ink-soft">atau</span>
+                  <div className="flex-1 h-px bg-pink-soft" />
+                </div>
+
+                <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                  <Input
+                    label="Kode undangan"
+                    placeholder="Misal: A7K2P9X"
+                    value={code}
+                    onChange={(e) => setCode(e.target.value.toUpperCase())}
+                    maxLength={8}
+                    className="uppercase tracking-widest font-semibold text-center"
+                  />
+                  {error && <p className="text-sm text-amber font-medium">{error}</p>}
+                  <Button type="submit" loading={loading} size="lg">
+                    Gabung sekarang
+                  </Button>
+                </form>
+              </>
+            )}
+          </Card>
+        </div>
+
+        {/* Sidebar — desktop only */}
+        <aside className="hidden lg:flex flex-col gap-4 w-72 xl:w-80 shrink-0 pt-14">
+          <div className="bg-glass border border-pink-soft rounded-3xl p-5">
+            <h3 className="font-display text-base text-ink mb-4">Cara bergabung</h3>
+            <ul className="flex flex-col gap-3">
+              {[
+                { step: "1", title: "Minta kode dari pemilik pot", desc: "Kode terdiri dari 7 karakter huruf dan angka" },
+                { step: "2", title: "Ketik atau scan QR", desc: "Ketik kode manual atau scan QR code yang dibagikan" },
+                { step: "3", title: "Langsung masuk ke pot", desc: "Setelah gabung, kamu bisa langsung mulai nabung" },
+              ].map((item) => (
+                <li key={item.step} className="flex gap-3">
+                  <span className="size-6 rounded-full bg-pink-strong text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
+                    {item.step}
+                  </span>
+                  <div>
+                    <p className="text-sm font-semibold text-ink">{item.title}</p>
+                    <p className="text-xs text-ink-soft leading-relaxed">{item.desc}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
           </div>
-        ) : (
-          <>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={startScan}
-              className="w-full mb-5"
-              size="lg"
-            >
-              <Camera className="size-5" />
-              Pindai QR code
-            </Button>
 
-            <div className="flex items-center gap-3 mb-5">
-              <div className="flex-1 h-px bg-pink-soft" />
-              <span className="text-xs text-ink-soft">atau</span>
-              <div className="flex-1 h-px bg-pink-soft" />
-            </div>
-
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-              <Input
-                label="Kode undangan"
-                placeholder="Misal: A7K2P9X"
-                value={code}
-                onChange={(e) => setCode(e.target.value.toUpperCase())}
-                maxLength={8}
-                className="uppercase tracking-widest font-semibold text-center"
-              />
-
-              {error && (
-                <p className="text-sm text-amber font-medium">{error}</p>
-              )}
-
-              <Button type="submit" loading={loading} size="lg">
-                Gabung sekarang
-              </Button>
-            </form>
-          </>
-        )}
-      </Card>
+          <div className="bg-peach border border-pink-soft rounded-3xl p-5">
+            <p className="text-xs font-semibold text-ink-soft uppercase tracking-wide mb-2">Tips</p>
+            <p className="text-sm text-ink leading-relaxed">
+              Kode tidak peka huruf besar/kecil dan spasi diabaikan otomatis — ketik saja apa adanya.
+            </p>
+          </div>
+        </aside>
+      </div>
     </div>
   );
 }

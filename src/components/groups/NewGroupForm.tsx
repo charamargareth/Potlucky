@@ -72,7 +72,7 @@ export default function NewGroupForm() {
   }
 
   return (
-    <div className="max-w-lg mx-auto animate-rise">
+    <div className="animate-rise">
       <Link
         href="/dashboard"
         className="inline-flex items-center gap-1.5 text-sm text-ink-soft hover:text-pink-deep mb-5 transition-colors"
@@ -81,16 +81,15 @@ export default function NewGroupForm() {
         Kembali
       </Link>
 
-      <h1 className="font-display text-2xl text-ink mb-1">
-        Buat pot baru
-      </h1>
-      <p className="text-sm text-ink-soft mb-6">
-        Tentukan target bersama. Kamu bisa undang anggota setelah pot
-        dibuat.
-      </p>
-
-      <Card className="p-6">
-        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+      <div className="flex flex-col lg:flex-row gap-8 items-start">
+        {/* Form utama */}
+        <div className="w-full lg:max-w-lg">
+          <h1 className="font-display text-2xl text-ink mb-1">Buat pot baru</h1>
+          <p className="text-sm text-ink-soft mb-6">
+            Tentukan target bersama. Kamu bisa undang anggota setelah pot dibuat.
+          </p>
+          <Card className="p-6">
+            <form onSubmit={handleSubmit} className="flex flex-col gap-5">
           <Input
             label="Nama pot"
             placeholder="Misal: Liburan ke Bali"
@@ -162,14 +161,46 @@ export default function NewGroupForm() {
           </div>
 
           {error && (
-            <p className="text-sm text-amber font-medium">{error}</p>
-          )}
+              <p className="text-sm text-amber font-medium">{error}</p>
+            )}
 
-          <Button type="submit" loading={loading} size="lg">
-            Buat pot
-          </Button>
-        </form>
-      </Card>
+            <Button type="submit" loading={loading} size="lg">
+              Buat pot
+            </Button>
+          </form>
+        </Card>
+      </div>
+
+      {/* Sidebar tips — desktop only */}
+      <aside className="hidden lg:flex flex-col gap-4 w-72 xl:w-80 shrink-0 pt-14">
+        <div className="bg-glass border border-pink-soft rounded-3xl p-5">
+          <h3 className="font-display text-base text-ink mb-4">Tips membuat pot</h3>
+          <ul className="flex flex-col gap-3">
+            {[
+              { title: "Nama yang spesifik", desc: "\"Liburan Bali Des 2025\" lebih jelas dari \"Liburan\"" },
+              { title: "Tetapkan target realistis", desc: "Hitung dulu total biaya, bagi jumlah anggota dan bulan tersisa" },
+              { title: "Pilih periode yang sesuai", desc: "Harian cocok untuk nabung konsisten, bulanan untuk gajian" },
+              { title: "Undang anggota segera", desc: "Setelah pot dibuat, langsung share kode ke anggota lain" },
+            ].map((tip) => (
+              <li key={tip.title} className="flex gap-2.5">
+                <span className="text-pink-strong font-bold text-sm mt-0.5 shrink-0">→</span>
+                <div>
+                  <p className="text-sm font-semibold text-ink">{tip.title}</p>
+                  <p className="text-xs text-ink-soft leading-relaxed">{tip.desc}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="bg-peach border border-pink-soft rounded-3xl p-5">
+          <p className="text-xs font-semibold text-ink-soft uppercase tracking-wide mb-2">Ingat</p>
+          <p className="text-sm text-ink leading-relaxed">
+            Target dan deskripsi pot bisa diubah kapan saja lewat tombol <strong>Edit Pot</strong> di halaman pot.
+          </p>
+        </div>
+      </aside>
     </div>
+  </div>
   );
 }
