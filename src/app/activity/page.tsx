@@ -72,7 +72,7 @@ export default function ActivityPage() {
         Dashboard
       </Link>
 
-      <div className="flex flex-col lg:flex-row gap-8 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] xl:grid-cols-[1fr_340px] gap-8 items-start">
         {/* Konten utama */}
         <div className="flex-1 min-w-0">
           <h1 className="font-display text-2xl text-ink mb-6">Aktivitas</h1>
@@ -124,7 +124,7 @@ export default function ActivityPage() {
         </div>
 
         {/* Sidebar — desktop only */}
-        <aside className="hidden lg:flex flex-col gap-4 w-72 xl:w-80 shrink-0">
+        <aside className="hidden lg:flex flex-col gap-4 shrink-0">
           <div className="bg-glass border border-pink-soft rounded-3xl p-5">
             <h3 className="font-display text-base text-ink mb-4">Ringkasan</h3>
             <div className="flex flex-col gap-3">

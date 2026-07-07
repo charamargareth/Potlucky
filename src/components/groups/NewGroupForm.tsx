@@ -81,9 +81,9 @@ export default function NewGroupForm() {
         Kembali
       </Link>
 
-      <div className="flex flex-col lg:flex-row gap-8 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] xl:grid-cols-[1fr_380px] gap-8 items-start">
         {/* Form utama */}
-        <div className="w-full lg:max-w-lg">
+        <div className="w-full">
           <h1 className="font-display text-2xl text-ink mb-1">Buat pot baru</h1>
           <p className="text-sm text-ink-soft mb-6">
             Tentukan target bersama. Kamu bisa undang anggota setelah pot dibuat.
@@ -172,7 +172,7 @@ export default function NewGroupForm() {
       </div>
 
       {/* Sidebar tips — desktop only */}
-      <aside className="hidden lg:flex flex-col gap-4 w-72 xl:w-80 shrink-0 pt-14">
+      <aside className="hidden lg:flex flex-col gap-4 shrink-0 pt-14">
         <div className="bg-glass border border-pink-soft rounded-3xl p-5">
           <h3 className="font-display text-base text-ink mb-4">Tips membuat pot</h3>
           <ul className="flex flex-col gap-3">
