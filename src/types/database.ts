@@ -1,5 +1,6 @@
 export type PeriodType = "daily" | "weekly" | "monthly";
 export type GroupStatus = "active" | "completed";
+export type ExpenseCategory = "transport" | "food" | "accommodation" | "entertainment" | "shopping" | "health" | "education" | "other";
 export type MemberRole = "owner" | "member";
 export type ReminderFrequency = "daily" | "weekly" | "monthly" | "off";
 export type NotificationType =
