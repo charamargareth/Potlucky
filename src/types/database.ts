@@ -1,5 +1,6 @@
 export type PeriodType = "daily" | "weekly" | "monthly";
 export type GroupStatus = "active" | "completed";
+export type GroupVisibility = "public" | "private";
 export type ExpenseCategory = "transport" | "food" | "accommodation" | "entertainment" | "shopping" | "health" | "education" | "other";
 export type MemberRole = "owner" | "member";
 export type ReminderFrequency = "daily" | "weekly" | "monthly" | "off";
@@ -33,6 +34,7 @@ export interface SavingsGroup {
   status: GroupStatus;
   created_at: string;
   updated_at: string;
+  visibility: GroupVisibility;
 }
 
 export interface GroupMember {
