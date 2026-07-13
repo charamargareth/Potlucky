@@ -59,6 +59,16 @@ export interface Contribution {
   profile?: Profile;
 }
 
+export interface JoinRequest {
+  id: string;
+  group_id: string;
+  user_id: string;
+  status: "pending" | "approved" | "rejected";
+  message: string | null;
+  created_at: string;
+  reviewed_at: string | null;
+  reviewed_by: string | null;
+}
 export interface ReminderSetting {
   id: string;
   user_id: string;
