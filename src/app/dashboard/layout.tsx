@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import TopNav from "@/components/TopNav";
-import IOSInstallBanner from "@/components/IOSInstallBanner";
+import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import type { Profile } from "@/types/database";
 
 export default async function DashboardLayout({
@@ -25,7 +25,7 @@ export default async function DashboardLayout({
     <div className="flex-1 flex flex-col">
       <TopNav profile={profile} />
       <main className="flex-1 max-w-7xl mx-auto w-full px-5 py-8">
-        <IOSInstallBanner />
+        <PWAInstallPrompt />
         {children}
       </main>
     </div>

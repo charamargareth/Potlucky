@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import SavingsJar from "@/components/ui/SavingsJar";
@@ -18,6 +19,8 @@ import EditContributionModal from "@/components/contributions/EditContributionMo
 import ExportButton from "@/components/contributions/ExportButton";
 import SavingsChart from "@/components/contributions/SavingsChart";
 import Logbook from "@/components/contributions/Logbook";
+import AuditLog from "@/components/groups/AuditLog";
+import JoinRequestsPanel from "@/components/groups/JoinRequestsPanel";
 import {
   ChevronLeft,
   UserPlus,
@@ -31,6 +34,9 @@ import {
   LogOut,
   Trophy,
   RotateCcw,
+  Shield,
+  Lock,
+  Globe,
 } from "lucide-react";
 import { formatCurrency, formatDateID, todayISO } from "@/lib/utils";
 import type {
@@ -50,7 +56,7 @@ export default function GroupDetailView({ groupId }: { groupId: string }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [view, setView] = useState<"overview" | "logbook">("overview");
+  const [view, setView] = useState<"overview" | "logbook" | "audit">("overview");
 
   const [showInvite, setShowInvite] = useState(false);
   const [showAddContribution, setShowAddContribution] = useState(false);
@@ -59,6 +65,11 @@ export default function GroupDetailView({ groupId }: { groupId: string }) {
   const [showEditGroup, setShowEditGroup] = useState(false);
   const [editingEntry, setEditingEntry] = useState<Contribution | null>(null);
   const [busy, setBusy] = useState(false);
+
+  useKeyboardShortcuts({
+    onContribute: () => setShowAddContribution(true),
+    onWithdraw: () => setShowWithdrawal(true),
+  });
 
   const loadData = useCallback(async () => {
     const supabase = createClient();
@@ -152,6 +163,18 @@ export default function GroupDetailView({ groupId }: { groupId: string }) {
 
   const isOwner = currentUserId === group.created_by;
   const isCompleted = group.status === "completed";
+  const isPrivate = group.visibility === "private";
+
+  async function handleToggleVisibility() {
+    setBusy(true);
+    const supabase = createClient();
+    const { data } = await supabase.rpc("update_group_visibility", {
+      p_group_id: groupId,
+      p_visibility: isPrivate ? "public" : "private",
+    });
+    setBusy(false);
+    if (data) setGroup(data as SavingsGroup);
+  }
 
   async function handleDeleteGroup() {
     if (
@@ -225,6 +248,12 @@ export default function GroupDetailView({ groupId }: { groupId: string }) {
                 <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wide text-amber bg-amber-soft px-2.5 py-1 rounded-full">
                   <Trophy className="size-3.5" />
                   Tercapai
+                </span>
+              )}
+              {isPrivate && (
+                <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wide text-ink-soft bg-peach px-2.5 py-1 rounded-full">
+                  <Lock className="size-3" />
+                  Privat
                 </span>
               )}
             </div>
@@ -305,6 +334,15 @@ export default function GroupDetailView({ groupId }: { groupId: string }) {
             )}
           </Button>
         )}
+        {isOwner && (
+          <Button variant="outline" onClick={handleToggleVisibility} disabled={busy}>
+            {isPrivate ? (
+              <><Globe className="size-4" />Jadikan Publik</>
+            ) : (
+              <><Lock className="size-4" />Jadikan Privat</>
+            )}
+          </Button>
+        )}
         {isOwner ? (
           <Button
             variant="outline"
@@ -327,6 +365,11 @@ export default function GroupDetailView({ groupId }: { groupId: string }) {
           </Button>
         )}
       </div>
+
+      {/* Join requests panel — owner only, private pot */}
+      {isOwner && isPrivate && (
+        <JoinRequestsPanel groupId={groupId} onUpdated={loadData} />
+      )}
 
       {/* Tabs */}
       <div className="flex items-center justify-between mb-5 border-b border-pink-soft/60">
@@ -353,6 +396,19 @@ export default function GroupDetailView({ groupId }: { groupId: string }) {
             <NotebookPen className="size-4" />
             Logbook
           </button>
+          {isOwner && (
+            <button
+              onClick={() => setView("audit")}
+              className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${
+                view === "audit"
+                  ? "border-pink-strong text-ink"
+                  : "border-transparent text-ink-soft hover:text-ink"
+              }`}
+            >
+              <Shield className="size-4" />
+              Audit Log
+            </button>
+          )}
         </div>
         {view === "logbook" && (
           <div className="pb-1">
@@ -391,17 +447,21 @@ export default function GroupDetailView({ groupId }: { groupId: string }) {
               totalSaved={totalSaved}
               targetDate={group.target_date}
               periodType={group.period_type}
-              initialDailyBudget={profile?.daily_budget ?? 0}
+              initialDailyBudget={0}
             />
           </div>
         </div>
-      ) : (
+      ) : view === "logbook" ? (
         <Card className="p-5">
           <Logbook
             contributions={contributions}
             currentUserId={currentUserId}
             onEditEntry={(entry) => setEditingEntry(entry)}
           />
+        </Card>
+      ) : (
+        <Card className="p-5">
+          <AuditLog groupId={groupId} />
         </Card>
       )}
 
