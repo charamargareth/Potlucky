@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Fraunces, Inter } from "next/font/google";
 import "./globals.css";
 import ThemeProvider from "@/components/ThemeProvider";
+import { ToastProvider } from "@/components/ToastContext";
 
 const fraunces = Fraunces({
   variable: "--font-display",
@@ -45,7 +46,9 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col bg-cream text-ink font-body">
         <ThemeProvider>
-          {children}
+          <ToastProvider>
+            {children}
+          </ToastProvider>
         </ThemeProvider>
       </body>
     </html>
