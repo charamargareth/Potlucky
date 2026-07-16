@@ -3,6 +3,7 @@ import { Fraunces, Inter } from "next/font/google";
 import "./globals.css";
 import ThemeProvider from "@/components/ThemeProvider";
 import { ToastProvider } from "@/components/ToastContext";
+import BottomNav from "@/components/BottomNav";
 
 const fraunces = Fraunces({
   variable: "--font-display",
@@ -44,10 +45,11 @@ export default function RootLayout({
       lang="id"
       className={`${fraunces.variable} ${inter.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-cream text-ink font-body">
+      <body className="min-h-full flex flex-col bg-cream text-ink font-body pb-16 lg:pb-0">
         <ThemeProvider>
           <ToastProvider>
             {children}
+            <BottomNav />
           </ToastProvider>
         </ThemeProvider>
       </body>

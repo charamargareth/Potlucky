@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { useToast } from "@/components/ToastContext";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import SavingsJar from "@/components/ui/SavingsJar";
@@ -50,6 +51,8 @@ const periodLabelMap = { daily: "Harian", weekly: "Mingguan", monthly: "Bulanan"
 
 export default function GroupDetailView({ groupId }: { groupId: string }) {
   const router = useRouter();
+  const { success, error: toastError, info } = useToast();
+
   const [group, setGroup] = useState<SavingsGroup | null>(null);
   const [members, setMembers] = useState<GroupMember[]>([]);
   const [contributions, setContributions] = useState<Contribution[]>([]);
@@ -103,34 +106,16 @@ export default function GroupDetailView({ groupId }: { groupId: string }) {
 
   useEffect(() => {
     let active = true;
-
-    (async () => {
-      await loadData();
-    })();
+    (async () => { await loadData(); })();
 
     const supabase = createClient();
     const channel = supabase
       .channel(`group-${groupId}-contributions`)
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "contributions", filter: `group_id=eq.${groupId}` },
-        () => {
-          if (active) loadData();
-        }
-      )
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "group_members", filter: `group_id=eq.${groupId}` },
-        () => {
-          if (active) loadData();
-        }
-      )
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "contributions", filter: `group_id=eq.${groupId}` }, () => { if (active) loadData(); })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "group_members", filter: `group_id=eq.${groupId}` }, () => { if (active) loadData(); })
       .subscribe();
 
-    return () => {
-      active = false;
-      supabase.removeChannel(channel);
-    };
+    return () => { active = false; supabase.removeChannel(channel); };
   }, [groupId, loadData]);
 
   if (loading || !group || !currentUserId) {
@@ -141,23 +126,15 @@ export default function GroupDetailView({ groupId }: { groupId: string }) {
     );
   }
 
-  const totalDeposit = contributions
-    .filter((c) => c.type !== "withdrawal")
-    .reduce((s, c) => s + Number(c.amount), 0);
-  const totalWithdrawal = contributions
-    .filter((c) => c.type === "withdrawal")
-    .reduce((s, c) => s + Number(c.amount), 0);
+  const totalDeposit = contributions.filter((c) => c.type !== "withdrawal").reduce((s, c) => s + Number(c.amount), 0);
+  const totalWithdrawal = contributions.filter((c) => c.type === "withdrawal").reduce((s, c) => s + Number(c.amount), 0);
   const totalSaved = totalDeposit - totalWithdrawal;
   const pct = group.target_amount > 0 ? Math.min(100, (totalSaved / group.target_amount) * 100) : 0;
   const today = todayISO();
-  const contributedTodayUserIds = new Set(
-    contributions.filter((c) => c.contributed_on === today).map((c) => c.user_id)
-  );
+  const contributedTodayUserIds = new Set(contributions.filter((c) => c.contributed_on === today).map((c) => c.user_id));
   const memberStats = members.map((member) => ({
     member,
-    totalContributed: contributions
-      .filter((c) => c.user_id === member.user_id)
-      .reduce((s, c) => s + Number(c.amount), 0),
+    totalContributed: contributions.filter((c) => c.user_id === member.user_id).reduce((s, c) => s + Number(c.amount), 0),
     contributedToday: contributedTodayUserIds.has(member.user_id),
   }));
 
@@ -168,32 +145,33 @@ export default function GroupDetailView({ groupId }: { groupId: string }) {
   async function handleToggleVisibility() {
     setBusy(true);
     const supabase = createClient();
-    const { data } = await supabase.rpc("update_group_visibility", {
+    const { data, error } = await supabase.rpc("update_group_visibility", {
       p_group_id: groupId,
       p_visibility: isPrivate ? "public" : "private",
     });
     setBusy(false);
+    if (error) {
+      toastError("Gagal mengubah visibilitas", error.message);
+      return;
+    }
     if (data) setGroup(data as SavingsGroup);
+    success(
+      isPrivate ? "Pot dijadikan publik" : "Pot dijadikan privat",
+      isPrivate ? "Siapapun bisa bergabung dengan kode undangan" : "Anggota baru perlu persetujuanmu dulu"
+    );
   }
 
   async function handleDeleteGroup() {
-    if (
-      !window.confirm(
-        `Hapus pot "${group!.name}" secara permanen? Semua catatan tabungan dan anggota di dalamnya akan ikut terhapus. Tindakan ini tidak bisa dibatalkan.`
-      )
-    ) {
-      return;
-    }
+    if (!window.confirm(`Hapus pot "${group!.name}" secara permanen? Semua catatan tabungan dan anggota di dalamnya akan ikut terhapus. Tindakan ini tidak bisa dibatalkan.`)) return;
     setBusy(true);
     const supabase = createClient();
-    const { error } = await supabase.rpc("delete_savings_group", {
-      p_group_id: groupId,
-    });
+    const { error } = await supabase.rpc("delete_savings_group", { p_group_id: groupId });
     setBusy(false);
     if (error) {
-      alert("Gagal menghapus pot: " + error.message);
+      toastError("Gagal menghapus pot", error.message);
       return;
     }
+    success("Pot dihapus", `"${group!.name}" telah dihapus secara permanen`);
     router.push("/dashboard");
   }
 
@@ -201,14 +179,13 @@ export default function GroupDetailView({ groupId }: { groupId: string }) {
     if (!window.confirm(`Keluar dari pot "${group!.name}"?`)) return;
     setBusy(true);
     const supabase = createClient();
-    const { error } = await supabase.rpc("leave_group", {
-      p_group_id: groupId,
-    });
+    const { error } = await supabase.rpc("leave_group", { p_group_id: groupId });
     setBusy(false);
     if (error) {
-      alert("Gagal keluar dari pot: " + error.message);
+      toastError("Gagal keluar dari pot", error.message);
       return;
     }
+    info("Kamu telah keluar dari pot", `Kamu tidak lagi menjadi anggota "${group!.name}"`);
     router.push("/dashboard");
   }
 
@@ -221,10 +198,14 @@ export default function GroupDetailView({ groupId }: { groupId: string }) {
     });
     setBusy(false);
     if (error) {
-      alert("Gagal mengubah status pot: " + error.message);
+      toastError("Gagal mengubah status pot", error.message);
       return;
     }
     setGroup(data as SavingsGroup);
+    success(
+      isCompleted ? "Pot diaktifkan kembali" : "Pot ditandai selesai!",
+      isCompleted ? "Pot kembali ke status aktif" : "Selamat! Target tabungan berhasil dicapai 🎉"
+    );
   }
 
   return (
@@ -246,27 +227,19 @@ export default function GroupDetailView({ groupId }: { groupId: string }) {
               <h1 className="font-display text-2xl text-ink">{group.name}</h1>
               {isCompleted && (
                 <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wide text-amber bg-amber-soft px-2.5 py-1 rounded-full">
-                  <Trophy className="size-3.5" />
-                  Tercapai
+                  <Trophy className="size-3.5" />Tercapai
                 </span>
               )}
               {isPrivate && (
                 <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wide text-ink-soft bg-peach px-2.5 py-1 rounded-full">
-                  <Lock className="size-3" />
-                  Privat
+                  <Lock className="size-3" />Privat
                 </span>
               )}
             </div>
-            {group.description && (
-              <p className="text-sm text-ink-soft mb-3">{group.description}</p>
-            )}
+            {group.description && <p className="text-sm text-ink-soft mb-3">{group.description}</p>}
             <div className="flex flex-wrap items-baseline gap-2 justify-center md:justify-start mb-3">
-              <span className="font-display text-3xl text-pink-deep">
-                {formatCurrency(totalSaved)}
-              </span>
-              <span className="text-sm text-ink-soft">
-                dari target {formatCurrency(group.target_amount)}
-              </span>
+              <span className="font-display text-3xl text-pink-deep">{formatCurrency(totalSaved)}</span>
+              <span className="text-sm text-ink-soft">dari target {formatCurrency(group.target_amount)}</span>
             </div>
             {totalWithdrawal > 0 && (
               <div className="flex gap-3 mb-2 text-xs justify-center md:justify-start">
@@ -275,16 +248,11 @@ export default function GroupDetailView({ groupId }: { groupId: string }) {
               </div>
             )}
             <div className="h-3 w-full rounded-full bg-peach overflow-hidden mb-2">
-              <div
-                className="h-full rounded-full bg-pink-strong transition-all duration-700"
-                style={{ width: `${pct}%` }}
-              />
+              <div className="h-full rounded-full bg-pink-strong transition-all duration-700" style={{ width: `${pct}%` }} />
             </div>
             <div className="flex flex-wrap gap-x-4 gap-y-1 justify-center md:justify-start text-xs text-ink-soft">
               <span>Periode {periodLabelMap[group.period_type]}</span>
-              {group.target_date && (
-                <span>Tenggat {formatDateID(group.target_date)}</span>
-              )}
+              {group.target_date && <span>Tenggat {formatDateID(group.target_date)}</span>}
               <span>{Math.round(pct)}% tercapai</span>
             </div>
           </div>
@@ -294,119 +262,67 @@ export default function GroupDetailView({ groupId }: { groupId: string }) {
       {/* Action buttons */}
       <div className="flex flex-wrap gap-2.5 mb-6">
         <Button onClick={() => setShowAddContribution(true)}>
-          <Plus className="size-4" />
-          Catat tabungan
+          <Plus className="size-4" />Catat tabungan
         </Button>
-        <Button
-          variant="outline"
-          onClick={() => setShowWithdrawal(true)}
-          className="border-amber/40 text-amber hover:bg-amber-soft"
-        >
-          <Minus className="size-4" />
-          Catat pemakaian
+        <Button variant="outline" onClick={() => setShowWithdrawal(true)} className="border-amber/40 text-amber hover:bg-amber-soft">
+          <Minus className="size-4" />Catat pemakaian
         </Button>
         <Button variant="outline" onClick={() => setShowInvite(true)}>
-          <UserPlus className="size-4" />
-          Undang anggota
+          <UserPlus className="size-4" />Undang anggota
         </Button>
         <Button variant="outline" onClick={() => setShowReminderSettings(true)}>
-          <BellRing className="size-4" />
-          Pengingat
+          <BellRing className="size-4" />Pengingat
         </Button>
         {isOwner && (
           <Button variant="outline" onClick={() => setShowEditGroup(true)}>
-            <Pencil className="size-4" />
-            Edit pot
+            <Pencil className="size-4" />Edit pot
           </Button>
         )}
         {isOwner && (
           <Button variant="outline" onClick={handleToggleStatus} disabled={busy}>
-            {isCompleted ? (
-              <>
-                <RotateCcw className="size-4" />
-                Aktifkan lagi
-              </>
-            ) : (
-              <>
-                <Trophy className="size-4" />
-                Tandai selesai
-              </>
-            )}
+            {isCompleted ? (<><RotateCcw className="size-4" />Aktifkan lagi</>) : (<><Trophy className="size-4" />Tandai selesai</>)}
           </Button>
         )}
         {isOwner && (
           <Button variant="outline" onClick={handleToggleVisibility} disabled={busy}>
-            {isPrivate ? (
-              <><Globe className="size-4" />Jadikan Publik</>
-            ) : (
-              <><Lock className="size-4" />Jadikan Privat</>
-            )}
+            {isPrivate ? (<><Globe className="size-4" />Jadikan Publik</>) : (<><Lock className="size-4" />Jadikan Privat</>)}
           </Button>
         )}
         {isOwner ? (
-          <Button
-            variant="outline"
-            onClick={handleDeleteGroup}
-            disabled={busy}
-            className="text-amber hover:bg-amber-soft border-amber/30"
-          >
-            <Trash2 className="size-4" />
-            Hapus pot
+          <Button variant="outline" onClick={handleDeleteGroup} disabled={busy} className="text-amber hover:bg-amber-soft border-amber/30">
+            <Trash2 className="size-4" />Hapus pot
           </Button>
         ) : (
-          <Button
-            variant="outline"
-            onClick={handleLeaveGroup}
-            disabled={busy}
-            className="text-amber hover:bg-amber-soft border-amber/30"
-          >
-            <LogOut className="size-4" />
-            Keluar dari pot
+          <Button variant="outline" onClick={handleLeaveGroup} disabled={busy} className="text-amber hover:bg-amber-soft border-amber/30">
+            <LogOut className="size-4" />Keluar dari pot
           </Button>
         )}
       </div>
 
-      {/* Join requests panel — owner only, private pot */}
-      {isOwner && isPrivate && (
-        <JoinRequestsPanel groupId={groupId} onUpdated={loadData} />
-      )}
+      {/* Join requests panel */}
+      {isOwner && isPrivate && <JoinRequestsPanel groupId={groupId} onUpdated={loadData} />}
 
       {/* Tabs */}
       <div className="flex items-center justify-between mb-5 border-b border-pink-soft/60">
         <div className="flex gap-1.5">
           <button
             onClick={() => setView("overview")}
-            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${
-              view === "overview"
-                ? "border-pink-strong text-ink"
-                : "border-transparent text-ink-soft hover:text-ink"
-            }`}
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${view === "overview" ? "border-pink-strong text-ink" : "border-transparent text-ink-soft hover:text-ink"}`}
           >
-            <TrendingUp className="size-4" />
-            Ringkasan
+            <TrendingUp className="size-4" />Ringkasan
           </button>
           <button
             onClick={() => setView("logbook")}
-            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${
-              view === "logbook"
-                ? "border-pink-strong text-ink"
-                : "border-transparent text-ink-soft hover:text-ink"
-            }`}
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${view === "logbook" ? "border-pink-strong text-ink" : "border-transparent text-ink-soft hover:text-ink"}`}
           >
-            <NotebookPen className="size-4" />
-            Logbook
+            <NotebookPen className="size-4" />Logbook
           </button>
           {isOwner && (
             <button
               onClick={() => setView("audit")}
-              className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${
-                view === "audit"
-                  ? "border-pink-strong text-ink"
-                  : "border-transparent text-ink-soft hover:text-ink"
-              }`}
+              className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${view === "audit" ? "border-pink-strong text-ink" : "border-transparent text-ink-soft hover:text-ink"}`}
             >
-              <Shield className="size-4" />
-              Audit Log
+              <Shield className="size-4" />Audit Log
             </button>
           )}
         </div>
@@ -421,16 +337,11 @@ export default function GroupDetailView({ groupId }: { groupId: string }) {
         <div className="grid md:grid-cols-[1.4fr_1fr] gap-5">
           <div className="flex flex-col gap-5">
             <Card className="p-5">
-              <h3 className="font-semibold text-ink text-[15px] mb-3">
-                Pertumbuhan tabungan
-              </h3>
+              <h3 className="font-semibold text-ink text-[15px] mb-3">Pertumbuhan tabungan</h3>
               <SavingsChart contributions={contributions} />
             </Card>
-
             <Card className="p-5">
-              <h3 className="font-semibold text-ink text-[15px] mb-3">
-                Anggota ({members.length})
-              </h3>
+              <h3 className="font-semibold text-ink text-[15px] mb-3">Anggota ({members.length})</h3>
               <MemberList
                 groupId={groupId}
                 memberStats={memberStats}
@@ -440,7 +351,6 @@ export default function GroupDetailView({ groupId }: { groupId: string }) {
               />
             </Card>
           </div>
-
           <div className="flex flex-col gap-5">
             <RecommendationCard
               targetAmount={group.target_amount}
@@ -475,6 +385,7 @@ export default function GroupDetailView({ groupId }: { groupId: string }) {
           onSuccess={() => {
             setShowAddContribution(false);
             loadData();
+            success("Tabungan tercatat!", "Kontribusimu berhasil ditambahkan ke pot");
           }}
         />
       )}
@@ -486,6 +397,7 @@ export default function GroupDetailView({ groupId }: { groupId: string }) {
           onSuccess={() => {
             setShowWithdrawal(false);
             loadData();
+            success("Pemakaian tercatat!", "Pengeluaran dari pot berhasil dicatat");
           }}
         />
       )}
@@ -496,23 +408,26 @@ export default function GroupDetailView({ groupId }: { groupId: string }) {
         <EditGroupModal
           group={group}
           onClose={() => setShowEditGroup(false)}
-          onSaved={(updated) => setGroup(updated)}
+          onSaved={(updated) => {
+            setGroup(updated);
+            success("Pot berhasil diupdate", "Perubahan pada pot telah disimpan");
+          }}
         />
       )}
       {editingEntry && (
         <EditContributionModal
           contribution={editingEntry}
-          canDelete={
-            editingEntry.user_id === currentUserId || currentUserId === group.created_by
-          }
+          canDelete={editingEntry.user_id === currentUserId || currentUserId === group.created_by}
           onClose={() => setEditingEntry(null)}
           onSaved={() => {
             setEditingEntry(null);
             loadData();
+            success("Catatan diupdate", "Perubahan catatan tabungan berhasil disimpan");
           }}
           onDeleted={() => {
             setEditingEntry(null);
             loadData();
+            success("Catatan dihapus", "Catatan tabungan berhasil dihapus");
           }}
         />
       )}
